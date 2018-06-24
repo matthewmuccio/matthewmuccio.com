@@ -1,0 +1,200 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Internet Users by Country (WebGL Globe)</title>
+	<meta charset="utf-8">
+	<style type="text/css">
+		html {
+			height: 100%;
+		}
+
+		body {
+			margin: 0;
+			padding: 0;
+			background: #000000 url(webglglobe/img/loading.gif) center center no-repeat;
+			color: #ffffff;
+			font-family: sans-serif;
+			font-size: 13px;
+			line-height: 20px;
+			height: 100%;
+		}
+
+		#info {
+			font-size: 11px;
+			position: absolute;
+			bottom: 5px;
+			background-color: rgba(0,0,0,0.8);
+			border-radius: 3px;
+			right: 10px;
+			padding: 10px;
+		}
+
+		#currentInfo {
+			font: Verdana;
+			width: 270px;
+			position: absolute;
+			left: 20px;
+			top: 63px;
+			background-color: rgba(0,0,0,0.2);
+			border-top: 1px solid rgba(255,255,255,0.4);
+			padding: 10px;
+		}
+
+		a {
+			color: #aaa;
+			text-decoration: none;
+		}
+
+		a:hover {
+			text-decoration: underline;
+		}
+
+		.bull {
+			padding: 0 5px;
+			color: #555;
+		}
+
+		#title {
+			position: absolute;
+			top: 20px;
+			width: 340px;
+			left: 20px;
+			background-color: rgba(0,0,0,0.2);
+			border-radius: 3px;
+			font: 20px Verdana;
+			padding: 10px;
+		}
+
+		.year {
+			visibility: hidden;
+			width: 300px;
+		}
+	</style>
+</head>
+<body>
+	<div id="container"></div>
+
+	<div id="info">
+		<strong>Created by <a href="http://matthewmuccio.com" target="_blank">Matthew Muccio</a> <span class="bull">&bull;</span> 
+			Source code on <a href="https://github.com/matthewmuccio/WebGLGlobe" target="_blank">GitHub</a> 
+			<span class="bull">&bull;</span> 
+			Powered by <a href="http://www.chromeexperiments.com/globe" target="_blank">WebGL Globe</a> 
+			<span class="bull">&bull;</span> 
+			Data from <a href="http://www.internetlivestats.com/internet-users-by-country" target="_blank">Internet Live Stats</a> 
+			<span class="bull">&bull;</span> 
+			Coordinates from <a href="https://developers.google.com/public-data/docs/canonical/countries_csv" target="_blank">Google Developers</a> 
+			<span class="bull">&bull;</span> 
+			WebGL Globe by the Google Data Arts Team</strong>
+	</div>
+
+	<div id="currentInfo">
+		<span id="year2016" class="year">2016</span>
+	</div>
+
+	<div id="title">
+		Internet Users by Country (2016)
+	</div>
+
+	<script type="text/javascript" src="/webglglobe/lib/Detector.js"></script>
+	<script type="text/javascript" src="/webglglobe/lib/three.min.js"></script>
+	<script type="text/javascript" src="/webglglobe/lib/Tween.js"></script>
+	<script type="text/javascript" src="/webglglobe/globe.js"></script>
+	<script type="text/javascript">
+
+    // If WebGL is not detected on the browser.
+    if(!Detector.webgl)
+    {
+    	Detector.addGetWebGLMessage();
+    }
+    else
+    {
+	   	// Array which stores the available years.
+	   	var years = ['2016'];
+	    // Where to put the WebGL globe.
+	    var container = document.getElementById('container');
+	    // Make the globe; store it in a variable.
+	    var globe = new DAT.Globe(container);
+
+	    console.log(globe);
+	    
+	    var i, tweens = [];
+	      
+	    // What happens when the user selects a new time.
+	    var settime = function(globe, t)
+	    {
+	      	return function()
+	      	{
+	      		new TWEEN.Tween(globe).to({time: t}, 500).easing(TWEEN.Easing.Cubic.EaseOut).start();
+
+	      		var y = document.getElementById('year' + years[t]);
+
+	      		if (y.getAttribute('class') === 'year active')
+	      		{
+	      			return;
+	      		}
+
+	      		var yy = document.getElementsByClassName('year');
+
+	      		for (i = 0; i < yy.length; i++)
+	      		{
+	      			yy[i].setAttribute('class','year');
+	      		}
+
+	      		y.setAttribute('class', 'year active');
+	      	};
+	    };
+      
+    	for(var i = 0; i < years.length; i++)
+    	{
+    		var y = document.getElementById('year' + years[i]);
+      		y.addEventListener('mouseover', settime(globe,i), false);
+    	}
+      
+      	// Stores XML HTTP Request object in order obtain JSON data.
+    	var xhr;
+    	TWEEN.start();
+      
+    	// Asking a file for the JSON data.
+    	xhr = new XMLHttpRequest();
+   		// Opening the file which holds the JSON data.
+    	xhr.open('GET', '/webglglobe/data.json', true);
+
+    	// What happens when we receive the data.
+    	xhr.onreadystatechange = function(e)
+    	{
+      		// If data is received.
+      		if (xhr.readyState === 4)
+      		{
+      			if (xhr.status === 200)
+      			{
+          			// Parse the JSON data.
+          			var data = JSON.parse(xhr.responseText);
+            		// Set data in the current window to the parsed JSON data.
+            		window.data = data;
+
+            		// Tell the WebGL globe about your JSON data.
+            		for (i = 0; i < data.length; i++)
+            		{
+            			globe.addData(data[i][1], {format: 'magnitude', name: data[i][0], animated: true});
+            		}
+            		// Create the geometry.
+            		globe.createPoints();
+            		// Use settime function to set time to 0 (2016).
+            		settime(globe, 0)();
+
+            		// Begin animation.
+            		globe.animate();
+            		// Remove loading GIF.
+            		document.body.style.backgroundImage = 'none';
+        		}
+    		}
+		};
+    	// Begin request.
+    	xhr.send(null);
+  }
+
+</script>
+
+</body>
+
+</html>
